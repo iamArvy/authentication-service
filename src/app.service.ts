@@ -34,7 +34,6 @@ export class AppService {
     const secret: string =
       this.config.get(type === 'refresh' ? 'REFRESH_SECRET' : 'JWT_SECRET') ||
       '';
-    console.log('secret', secret);
     const token = await this.jwtService.signAsync(payload, {
       expiresIn: type === 'refresh' ? '7d' : '15m',
       secret: secret,
@@ -65,7 +64,6 @@ export class AppService {
 
   async login(data: LoginInput) {
     const user = await this.user.findByEmailWithPassword(data.email);
-    console.log(user);
     if (!user) throw new UnauthorizedException('User not found');
     await this.compareSecrets(user.password, data.password);
     return this.authenticateUser(user.id as string, user.email);

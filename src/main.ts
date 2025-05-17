@@ -6,10 +6,8 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.enableCors();
   const config = new DocumentBuilder()
-    .setTitle('Dreamscape Authenticator')
-    .setDescription(
-      'The Documentation for the Authenticator service for Dreamscape',
-    )
+    .setTitle('Authentication Service')
+    .setDescription('REST API for Authentication Service')
     .addBearerAuth()
     .setVersion('1.0')
     .build();

@@ -26,7 +26,7 @@ interface TokenData {
   expiresIn: number;
 }
 
-export type AuthResponse = {
+export class AuthResponse {
   access: TokenData;
   refresh: TokenData;
-};
+}
