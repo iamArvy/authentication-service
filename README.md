@@ -54,7 +54,3 @@ pnpm run start:dev
 The service will be available at `http://localhost:3000`.
 
 Visit `/api` to see the Swagger API documentation.
-
-## License
-
-MIT License
