@@ -18,7 +18,9 @@ import { Auth, AuthSchema } from './auth/auth.schema';
       { name: Session.name, schema: SessionSchema },
     ]),
     PassportModule,
-    JwtModule.register({}),
+    JwtModule.register({
+      secret: process.env.JWT_SECRET || 'dev-secret',
+    }),
     ConfigModule.forRoot({ isGlobal: true }),
   ],
   controllers: [AppController],

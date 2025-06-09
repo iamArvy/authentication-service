@@ -1,32 +1,43 @@
+# 🔐 Authentication Service
 
-# Authentication Service
+A secure and scalable authentication microservice built with **NestJS**, **Passport**, and **JWT**, supporting gRPC transport for efficient internal communication in microservice architectures.
 
-Authentication Service is an authentication microservice built with **NestJS**, **Passport**, and **JWT**. Designed for secure and scalable authentication in microservice architectures. Currently supports REST API endpoints for user authentication and authorization.
+---
 
-## Features
+## 🚀 Features
 
-* User registration and login with JWT authentication
-* Integration with Prisma ORM for database operations
-* Built with Passport.js for flexible authentication strategies
-* Ready to be extended for event-driven architecture and GraphQL support
+* ✅ User registration and login with JWT (access + refresh tokens)
+* ✅ Session-based refresh token storage with expiration and revocation
+* ✅ gRPC endpoints for communication with other services
+* ✅ Password hashing with Argon2
+* ✅ Built-in email verification & logout functionality
+* ✅ Extensible with support for token rotation and auditing
 
-## Technologies
+---
 
-* **Framework**: [NestJS](https://nestjs.com/)
-* **Authentication**: [Passport.js](https://www.passportjs.org/) & [JWT (JSON Web Tokens)](https://jwt.io/)
-* **API**: REST
-* **ORM**: [Mongoose](https://www.mongoose.org/)
-* **Databases**: [MongoDB](https://www.mongodb.org/)
-* **API Docs**: [Swagger](https://swagger.org)
+## ⚙️ Technologies
 
-## Getting Started
+| Category          | Stack                                                                |
+| ----------------- | -------------------------------------------------------------------- |
+| **Framework**     | [NestJS](https://nestjs.com/)                                        |
+| **Transport**     | [gRPC](https://grpc.io/)                                             |
+| **Auth Strategy** | [Passport.js](https://www.passportjs.org/)<br>[JWT](https://jwt.io/) |
+| **ORM**           | [Mongoose](https://mongoosejs.com/)                                  |
+| **Database**      | [MongoDB](https://mongodb.com/)                                      |
 
-### Prerequisites
+---
 
-- Node.js (v20+)
-- npm, yarn, or pnpm (pnpm is recommended)
+## 📦 Getting Started
 
-### Installation
+### ✅ Prerequisites
+
+* Node.js `v20+`
+* pnpm (recommended) / npm / yarn
+* MongoDB instance (local or cloud)
+
+---
+
+### 🛠 Installation
 
 ```bash
 git clone https://github.com/iamArvy/authentication-service.git
@@ -34,20 +45,24 @@ cd authentication-service
 pnpm install
 ```
 
-### Environment Variables
+---
 
-Create a `.env` file in the root directory with the following variables:
+### 🔐 Environment Variables
 
-```
-DB_URL="your_mongodb_connection_string"
-JWT_SECRET="your_jwt_secret"
-REFRESH_SECRET="your_refresh_secret"
+Create a `.env` file in the root directory:
+
+```env
+DB_URL=mongodb://localhost:27017/auth-db
+JWT_SECRET=your_jwt_secret
 PORT=3000
 ```
 
-### Running the service
+---
+
+### 🚧 Running the Service
 
 ```bash
+# Development
 pnpm run start:dev
 
 # Or with Docker
@@ -56,25 +71,35 @@ docker-compose up --build
 
 ---
 
-## 📚 API Documentation
-
-* **Swagger UI** (REST): [http://localhost:3000/api](http://localhost:3000/api)
-
----
-
-## 🗃️ Folder Structure (Simplified)
+## 🗓️ Folder Structure (Simplified)
 
 ```
-chat-service/
+authentication-service/
+├── proto/
+│   └── auth.proto            # gRPC definitions
 ├── src/
-│   ├── gateway/         # WebSocket Gateway
-│   ├── message/         # Message logic
-│   ├── conversation/    # Conversations
-│   ├── graphql/         # GraphQL resolvers & schema
-│   ├── rest/            # REST controllers
-│   ├── prisma/          # Prisma setup (Postgres)
-│   ├── mongoose/        # Mongoose models (MongoDB)
-│   └── app.module.ts
+│   ├── auth/                # Auth repository, logic, schema
+│   ├── dto/                 # Data transfer objects
+│   ├── session/             # Session management (Mongo)
+│   ├── app.controller.ts    # gRPC controller
+│   ├── app.module.ts        # Nest module setup
+│   ├── app.service.ts       # App service
+│   ├── main.ts              # Entry point
+│   └── token.service.ts     # Token generation/validation
 ├── docker-compose.yml
 └── README.md
 ```
+
+---
+
+## 📊 Roadmap Ideas
+
+* ☑️ Add rate limiting to login route
+* ☑️ Add Redis caching for session lookups
+* ☑️ Add unit and integration tests
+* ☑️ gRPC health check endpoint
+* ☑️ Audit logging for sessions and auth attempts
+
+---
+
+Feel free to contribute, open issues, or fork the project!

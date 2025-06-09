@@ -49,7 +49,6 @@ export class AppService {
     });
     const accessToken = await this.tokenService.generateAccessToken(id);
     const refreshToken = await this.tokenService.generateRefreshToken(
-      id,
       session.id as string,
     );
     const hashedRefreshToken = await argon.hash(refreshToken);
@@ -94,11 +93,10 @@ export class AppService {
   async refreshToken(
     refresh_token: string,
   ): Promise<{ token: string; expiresIn: number }> {
-    const payload = await this.tokenService.verifyToken<{
+    const { sub: id } = await this.tokenService.verifyToken<{
       sub: string;
-      session_id: string;
-    }>(refresh_token, 'REFRESH_SECRET');
-    const session = await this.sessionRepo.findById(payload.session_id);
+    }>(refresh_token);
+    const session = await this.sessionRepo.findById(id);
     if (!session || session.revokedAt) {
       throw new UnauthorizedException('Session not found or revoked');
     }
