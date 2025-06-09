@@ -1,20 +1,25 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-
+import { Transport } from '@nestjs/microservices';
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
-  app.enableCors();
-  const config = new DocumentBuilder()
-    .setTitle('Authentication Service')
-    .setDescription('REST API for Authentication Service')
-    .addBearerAuth()
-    .setVersion('1.0')
-    .build();
-  const documentFactory = () => SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api', app, documentFactory, {
-    jsonDocumentUrl: 'swagger/json',
+  const app = await NestFactory.createMicroservice(AppModule, {
+    transport: Transport.GRPC,
+    url: process.env.GRPC_URL ?? '',
+    // options: {
+    //   package: 'auth',
+    //   protoPath: 'proto/auth.proto',
+    //   loader: {
+    //     arrays: true,
+    //     objects: true,
+    //     includeDirs: ['proto'],
+    //     keepCase: true,
+    //     longs: String,
+    //     defaults: true,
+    //     oneofs: true,
+    //     enums: String,
+    //   },
+    // },
   });
-  await app.listen(process.env.PORT ?? 3000);
+  await app.listen();
 }
 bootstrap();

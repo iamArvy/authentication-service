@@ -1,51 +1,64 @@
-import { AuthResponse } from './app.response';
-import {
-  Body,
-  Controller,
-  Get,
-  Post,
-  Request,
-  UseGuards,
-} from '@nestjs/common';
+import { Controller } from '@nestjs/common';
 import { AppService } from './app.service';
-import { LoginInput, RegisterInput } from './app.inputs';
-import { ApiBearerAuth, ApiOkResponse } from '@nestjs/swagger';
-import { JwtAuthGuard } from './guards';
+import {
+  AuthInput,
+  IdInput,
+  LoginData,
+  LogoutInput,
+  RegisterData,
+  TokenInput,
+  UpdateEmailData,
+  UpdatePasswordData,
+  UserInput,
+} from './dto/app.inputs';
+import { GrpcMethod } from '@nestjs/microservices';
 
 @Controller()
 export class AppController {
   constructor(private readonly service: AppService) {}
 
-  @ApiOkResponse({ description: 'Status of the API', type: String })
-  @Get('health')
+  @GrpcMethod('AuthService')
   health() {
-    return 'OK';
+    return { success: true };
   }
 
-  @ApiOkResponse({ description: 'Authentication Tokens', type: AuthResponse })
-  @Post('register')
-  register(@Body() data: RegisterInput) {
-    return this.service.signup(data);
+  @GrpcMethod('AuthService')
+  register(data: AuthInput<RegisterData>) {
+    return this.service.signup(data.data, data.userAgent, data.ipAddress);
   }
 
-  @ApiOkResponse({ description: 'Authentication Tokens', type: AuthResponse })
-  @Post('login')
-  login(@Body() data: LoginInput) {
-    return this.service.login(data);
+  @GrpcMethod('AuthService')
+  changePassword({ id, data }: UserInput<UpdatePasswordData>) {
+    return this.service.updatePassword(id, data);
   }
 
-  @ApiOkResponse({ description: 'Authentication Tokens', type: AuthResponse })
-  @Post('refresh-token')
-  refreshToken(@Body() data: { refresh_token: string }) {
-    return this.service.refreshToken(data.refresh_token);
+  @GrpcMethod('AuthService')
+  changeEmail({ id, data }: UserInput<UpdateEmailData>) {
+    return this.service.updateEmail(id, data);
   }
 
-  @ApiOkResponse({ description: 'True or False Response', type: Boolean })
-  @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard)
-  @Post('logout')
-  async logout(@Request() req: { user: string }) {
-    await this.service.logout(req.user);
-    return true;
+  @GrpcMethod()
+  requestEmailVerification({ id }: IdInput) {
+    return this.service.requestEmailVerification(id);
+  }
+
+  @GrpcMethod()
+  verifyEmail({ token }: TokenInput) {
+    return this.service.verifyEmail(token);
+  }
+
+  @GrpcMethod('AuthService')
+  login(data: AuthInput<LoginData>) {
+    return this.service.login(data.data, data.userAgent, data.ipAddress);
+  }
+
+  @GrpcMethod('AuthService')
+  refreshToken({ token }: TokenInput) {
+    return this.service.refreshToken(token);
+  }
+
+  @GrpcMethod('AuthService')
+  logout({ id }: LogoutInput) {
+    return this.service.logout(id);
   }
 }

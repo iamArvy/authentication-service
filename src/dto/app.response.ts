@@ -30,3 +30,7 @@ export class AuthResponse {
   access: TokenData;
   refresh: TokenData;
 }
+
+export class Status {
+  success: boolean;
+}

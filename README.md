@@ -1,23 +1,23 @@
 
 # Authentication Service
 
-A NestJS-based authentication microservice built with Prisma, Passport, and JWT. Designed for secure and scalable authentication in microservice architectures. Currently supports REST API endpoints for user authentication and authorization.
+Authentication Service is an authentication microservice built with **NestJS**, **Passport**, and **JWT**. Designed for secure and scalable authentication in microservice architectures. Currently supports REST API endpoints for user authentication and authorization.
 
 ## Features
 
-- User registration and login with JWT authentication
-- Integration with Prisma ORM for database operations
-- Built with Passport.js for flexible authentication strategies
-- Ready to be extended for event-driven architecture and GraphQL support
+* User registration and login with JWT authentication
+* Integration with Prisma ORM for database operations
+* Built with Passport.js for flexible authentication strategies
+* Ready to be extended for event-driven architecture and GraphQL support
 
 ## Technologies
 
-- [NestJS](https://nestjs.com/)
-- [Prisma](https://www.prisma.io/)
-- [Passport.js](http://www.passportjs.org/)
-- [JWT (JSON Web Tokens)](https://jwt.io/)
-- REST API
-- MongoDB
+* **Framework**: [NestJS](https://nestjs.com/)
+* **Authentication**: [Passport.js](https://www.passportjs.org/) & [JWT (JSON Web Tokens)](https://jwt.io/)
+* **API**: REST
+* **ORM**: [Mongoose](https://www.mongoose.org/)
+* **Databases**: [MongoDB](https://www.mongodb.org/)
+* **API Docs**: [Swagger](https://swagger.org)
 
 ## Getting Started
 
@@ -49,8 +49,32 @@ PORT=3000
 
 ```bash
 pnpm run start:dev
+
+# Or with Docker
+docker-compose up --build
 ```
 
-The service will be available at `http://localhost:3000`.
+---
 
-Visit `/api` to see the Swagger API documentation.
+## 📚 API Documentation
+
+* **Swagger UI** (REST): [http://localhost:3000/api](http://localhost:3000/api)
+
+---
+
+## 🗃️ Folder Structure (Simplified)
+
+```
+chat-service/
+├── src/
+│   ├── gateway/         # WebSocket Gateway
+│   ├── message/         # Message logic
+│   ├── conversation/    # Conversations
+│   ├── graphql/         # GraphQL resolvers & schema
+│   ├── rest/            # REST controllers
+│   ├── prisma/          # Prisma setup (Postgres)
+│   ├── mongoose/        # Mongoose models (MongoDB)
+│   └── app.module.ts
+├── docker-compose.yml
+└── README.md
+```

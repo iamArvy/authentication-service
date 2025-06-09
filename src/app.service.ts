@@ -1,23 +1,31 @@
-import { User } from './user/user.schema';
 import {
+  BadRequestException,
   Injectable,
+  Logger,
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
-import { LoginInput, RegisterInput, UpdatePasswordInput } from './app.inputs';
-import { JwtService } from '@nestjs/jwt';
-import { ConfigService } from '@nestjs/config';
-import { UserService } from './user/user.service';
+import {
+  LoginData,
+  RegisterData,
+  UpdateEmailData,
+  UpdatePasswordData,
+} from './dto/app.inputs';
 import * as argon from 'argon2';
-import { AuthResponse } from './app.response';
+import { AuthResponse, Status } from './dto/app.response';
+import { AuthRepo } from './auth/auth.repo';
+import { SessionRepo } from './session/session.repo';
+import { TokenService } from './token.service';
 
 @Injectable()
 export class AppService {
   constructor(
-    private user: UserService,
-    private jwtService: JwtService,
-    private config: ConfigService,
+    private authRepo: AuthRepo,
+    private sessionRepo: SessionRepo,
+    private tokenService: TokenService,
   ) {}
+
+  private logger = new Logger('AuthService');
 
   async compareSecrets(hash: string, secret: string): Promise<boolean> {
     const valid = await argon.verify(hash, secret);
@@ -25,76 +33,156 @@ export class AppService {
     return true;
   }
 
-  private async generateToken(
-    sub: string,
-    email: string,
-    type: 'refresh' | 'access',
-  ): Promise<string> {
-    const payload = { sub, email };
-    const secret: string =
-      this.config.get(type === 'refresh' ? 'REFRESH_SECRET' : 'JWT_SECRET') ||
-      '';
-    const token = await this.jwtService.signAsync(payload, {
-      expiresIn: type === 'refresh' ? '7d' : '15m',
-      secret: secret,
+  private async authenticateUser(
+    id: string,
+    userAgent: string,
+    ipAddress: string,
+  ): Promise<AuthResponse> {
+    const refreshTokenExpiresIn = 60 * 60 * 24 * 7; // 7 days = 604800
+    const accessTokenExpiresIn = 60 * 15; // 15 minutes = 900
+
+    const session = await this.sessionRepo.create({
+      userId: id,
+      userAgent,
+      ipAddress,
+      expiresAt: new Date(Date.now() + refreshTokenExpiresIn * 1000),
     });
-    return token;
-  }
-
-  private async authenticateUser(id: string, email: string) {
-    const access_token = await this.generateToken(id, email, 'access');
-    const refresh_token = await this.generateToken(id, email, 'refresh');
-
-    const hashedRefreshToken = await argon.hash(refresh_token);
-    await this.user.updateRefreshToken(id, hashedRefreshToken);
+    const accessToken = await this.tokenService.generateAccessToken(id);
+    const refreshToken = await this.tokenService.generateRefreshToken(
+      id,
+      session.id as string,
+    );
+    const hashedRefreshToken = await argon.hash(refreshToken);
+    session.hashedRefreshToken = hashedRefreshToken;
+    await session.save();
     return {
-      access: { token: access_token, expiresIn: 15000 },
-      refresh: { token: refresh_token, expiresIn: 24000 },
+      access: { token: accessToken, expiresIn: accessTokenExpiresIn * 1000 },
+      refresh: { token: refreshToken, expiresIn: refreshTokenExpiresIn * 1000 },
     };
   }
 
-  async signup(data: RegisterInput): Promise<AuthResponse> {
+  async signup(
+    data: RegisterData,
+    userAgent: string,
+    ipAddress: string,
+  ): Promise<AuthResponse> {
     if (!data) throw new UnauthorizedException('Invalid credentials');
-    const exists = await this.user.findByEmail(data.email);
+    const exists = await this.authRepo.findByEmail(data.email);
     if (exists) throw new UnauthorizedException('User already exists');
     const hash = await argon.hash(data.password);
-    const user = await this.user.create(data.email, hash);
-    return this.authenticateUser(user.id as string, user.email);
-  }
-
-  async login(data: LoginInput) {
-    const user = await this.user.findByEmailWithPassword(data.email);
-    if (!user) throw new UnauthorizedException('User not found');
-    await this.compareSecrets(user.password, data.password);
-    return this.authenticateUser(user.id as string, user.email);
-  }
-
-  async refreshToken(refresh_token: string): Promise<AuthResponse> {
-    const { sub }: { sub: string } = this.jwtService.verify(refresh_token, {
-      secret: this.config.get('REFRESH_SECRET') || '',
+    const user = await this.authRepo.create({
+      email: data.email,
+      passwordHash: hash,
     });
-
-    const user = await this.user.find(sub);
-    if (!user || !user.refresh_token)
-      throw new UnauthorizedException('Invalid refresh token');
-    await this.compareSecrets(user.refresh_token, refresh_token);
-    return this.authenticateUser(user.id as string, user.email);
+    if (!user) throw new UnauthorizedException('User creation failed');
+    return this.authenticateUser(user.id as string, userAgent, ipAddress);
   }
 
-  async logout(id: string) {
-    await this.user.updateRefreshToken(id, null);
+  async login(
+    data: LoginData,
+    userAgent: string,
+    ipAddress: string,
+  ): Promise<AuthResponse> {
+    const user = await this.authRepo.findByEmail(data.email);
+    if (!user) throw new UnauthorizedException('User not found');
+    if (!user.emailVerified)
+      throw new UnauthorizedException('Email not verified');
+    await this.compareSecrets(user.passwordHash, data.password);
+    return this.authenticateUser(user.id as string, userAgent, ipAddress);
   }
 
-  async updatePassword(id: string, data: UpdatePasswordInput): Promise<User> {
-    const user = await this.user.find(id);
+  async refreshToken(
+    refresh_token: string,
+  ): Promise<{ token: string; expiresIn: number }> {
+    const payload = await this.tokenService.verifyToken<{
+      sub: string;
+      session_id: string;
+    }>(refresh_token, 'REFRESH_SECRET');
+    const session = await this.sessionRepo.findById(payload.session_id);
+    if (!session || session.revokedAt) {
+      throw new UnauthorizedException('Session not found or revoked');
+    }
+    if (session.expiresAt < new Date()) {
+      throw new UnauthorizedException('Session expired');
+    }
+
+    // Check if the session's hashed refresh token matches the provided refresh token
+    if (!session.hashedRefreshToken)
+      throw new UnauthorizedException('Session has no refresh token');
+    // Compare the hashed refresh token with the provided refresh token
+    await this.compareSecrets(session.hashedRefreshToken, refresh_token);
+
+    const user = await this.authRepo.findById(session.userId);
+    if (!user) throw new NotFoundException('User not found');
+    // Generate new tokens
+    const accessToken = await this.tokenService.generateAccessToken(
+      user.id as string,
+    );
+    return { token: accessToken, expiresIn: 60 * 15 * 1000 };
+  }
+
+  async logout(id: string): Promise<Status> {
+    const session = await this.sessionRepo.findById(id);
+    if (!session) throw new NotFoundException('Session not found');
+    if (session.revokedAt) {
+      throw new UnauthorizedException('Session already revoked');
+    }
+    // Mark the session as revoked
+    session.hashedRefreshToken = null; // Clear the hashed refresh token
+    session.expiresAt = new Date(); // Set the expiration to now
+    session.revokedAt = new Date();
+    await session.save();
+    return { success: true };
+  }
+
+  async updatePassword(id: string, data: UpdatePasswordData): Promise<Status> {
+    const user = await this.authRepo.findById(id);
     if (!user) throw new NotFoundException('User not found');
 
-    const valid = await this.compareSecrets(user.password, data.oldPassword);
-    if (!valid) throw new UnauthorizedException('Old password incorrect');
+    await this.compareSecrets(user.passwordHash, data.oldPassword);
 
     const hash = await argon.hash(data.newPassword);
 
-    user.password = hash;
-    return await user.save();
+    user.passwordHash = hash;
+    await user.save();
+    return { success: true };
+  }
+
+  async updateEmail(id: string, data: UpdateEmailData): Promise<Status> {
+    const user = await this.authRepo.findById(id);
+    if (!user) throw new UnauthorizedException('User not Found');
+    user.email = data.email;
+    user.emailVerified = false;
+    await user.save();
+    return { success: true };
+  }
+
+  async requestEmailVerification(id: string): Promise<Status> {
+    const user = await this.authRepo.findById(id);
+    if (!user) throw new NotFoundException('User not found');
+    if (user.emailVerified)
+      throw new UnauthorizedException('Email already verified');
+    // const token =
+    await this.tokenService.generateEmailVerificationToken(
+      user.id as string,
+      user.email,
+    );
+    // Here you would typically send a verification email with a link
+    // containing a token or code to verify the email.
+    return { success: true };
+  }
+
+  async verifyEmail(token: string): Promise<Status> {
+    const { sub, email }: { sub: string; email: string } =
+      await this.tokenService.verifyEmailToken(token);
+    const user = await this.authRepo.findById(sub);
+    if (!user) throw new NotFoundException('User not found');
+    if (user.email !== email)
+      throw new BadRequestException(
+        'Email from token does not match user email',
+      );
+    user.emailVerified = true;
+    await user.save();
+    return { success: true };
   }
 }
