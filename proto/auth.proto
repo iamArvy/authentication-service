@@ -5,33 +5,27 @@ package auth;
 import "google/protobuf/empty.proto";
 
 service AuthService {
-  rpc Health(google.protobuf.Empty) returns (HealthCheckResponse);
+  rpc Health(google.protobuf.Empty) returns (Status);
 
   // Credential-related
   rpc Register(RegisterRequest) returns (AuthResponse);
   rpc ChangePassword(ChangePasswordRequest) returns (Status);
   rpc ChangeEmail(ChangeEmailRequest) returns (Status);
+  rpc requestPasswordResetToken(RequestPasswordResetMessage) returns (Status);
+  rpc resetPassword(ResetPasswordMessage) returns (Status);
 
   // Email verification
-  rpc RequestEmailVerification(IdRequest) returns (Status);
+  rpc RequestEmailVerification(EmailData) returns (Status);
   rpc VerifyEmail(TokenRequest) returns (Status);
 
   // Login / Token
   rpc Login(LoginRequest) returns (AuthResponse);
   rpc RefreshToken(TokenRequest) returns (AuthToken);
-  rpc Logout(IdRequest) returns (Status);
-}
-
-message HealthCheckResponse {
-  string status = 1;
+  rpc Logout(TokenRequest) returns (Status);
 }
 
 message Status {
   bool success = 1;
-}
-
-message IdRequest {
-  string id = 1;
 }
 
 message RegisterData {
@@ -66,13 +60,23 @@ message ChangePasswordRequest {
   ChangePasswordData data = 2;
 }
 
-message ChangeEmailData {
+message RequestPasswordResetMessage {
+  string id = 1;
+  string email = 2;
+}
+
+message ResetPasswordMessage {
+  string token = 1;
+  string password = 2;
+}
+
+message EmailData {
   string email = 1;
 }
 
 message ChangeEmailRequest {
   string id = 1;
-  ChangeEmailData data = 2;
+  EmailData data = 2;
 }
 
 message TokenRequest {

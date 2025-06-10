@@ -27,13 +27,6 @@ export class Auth {
 
   @Prop({ required: true, select: false, default: false })
   emailVerified: boolean;
-
-  @Prop({ required: true, select: false })
-  passwordResetToken: string;
-
-  @Prop({ required: true, select: false })
-  @Prop()
-  refresh_token?: string;
 }
 
 export const AuthSchema = SchemaFactory.createForClass(Auth);

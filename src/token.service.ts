@@ -38,6 +38,13 @@ export class TokenService {
     );
   }
 
+  async generatePasswordResetToken(id: string, email: string): Promise<string> {
+    return await this.generateToken(
+      { sub: id, email, type: 'password_reset' },
+      '15m',
+    );
+  }
+
   async verifyToken<T extends object>(token: string): Promise<T> {
     try {
       return this.jwtService.verifyAsync<T>(token);
@@ -51,6 +58,13 @@ export class TokenService {
     return await this.verifyToken<{
       sub: string;
       email: string;
+    }>(token);
+  }
+
+  async verifyRefreshToken(token: string) {
+    return await this.verifyToken<{
+      sub: string;
+      type: string;
     }>(token);
   }
 }

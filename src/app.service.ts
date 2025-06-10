@@ -68,13 +68,19 @@ export class AppService {
     if (!data) throw new UnauthorizedException('Invalid credentials');
     const exists = await this.authRepo.findByEmail(data.email);
     if (exists) throw new UnauthorizedException('User already exists');
+    const userExist = await this.authRepo.findByUserId(data.userId);
+    if (userExist)
+      throw new UnauthorizedException(
+        'User already exists with a different email',
+      );
     const hash = await argon.hash(data.password);
     const user = await this.authRepo.create({
+      userId: data.userId,
       email: data.email,
       passwordHash: hash,
     });
     if (!user) throw new UnauthorizedException('User creation failed');
-    return this.authenticateUser(user.id as string, userAgent, ipAddress);
+    return this.authenticateUser(user.userId, userAgent, ipAddress);
   }
 
   async login(
@@ -87,7 +93,7 @@ export class AppService {
     if (!user.emailVerified)
       throw new UnauthorizedException('Email not verified');
     await this.compareSecrets(user.passwordHash, data.password);
-    return this.authenticateUser(user.id as string, userAgent, ipAddress);
+    return this.authenticateUser(user.userId, userAgent, ipAddress);
   }
 
   async refreshToken(
@@ -110,17 +116,18 @@ export class AppService {
     // Compare the hashed refresh token with the provided refresh token
     await this.compareSecrets(session.hashedRefreshToken, refresh_token);
 
-    const user = await this.authRepo.findById(session.userId);
+    const user = await this.authRepo.findByUserId(session.userId);
     if (!user) throw new NotFoundException('User not found');
     // Generate new tokens
     const accessToken = await this.tokenService.generateAccessToken(
-      user.id as string,
+      user.userId,
     );
     return { token: accessToken, expiresIn: 60 * 15 * 1000 };
   }
 
-  async logout(id: string): Promise<Status> {
-    const session = await this.sessionRepo.findById(id);
+  async logout(token: string): Promise<Status> {
+    const { sub } = await this.tokenService.verifyRefreshToken(token);
+    const session = await this.sessionRepo.findById(sub);
     if (!session) throw new NotFoundException('Session not found');
     if (session.revokedAt) {
       throw new UnauthorizedException('Session already revoked');
@@ -134,7 +141,7 @@ export class AppService {
   }
 
   async updatePassword(id: string, data: UpdatePasswordData): Promise<Status> {
-    const user = await this.authRepo.findById(id);
+    const user = await this.authRepo.findByUserId(id);
     if (!user) throw new NotFoundException('User not found');
 
     await this.compareSecrets(user.passwordHash, data.oldPassword);
@@ -147,7 +154,7 @@ export class AppService {
   }
 
   async updateEmail(id: string, data: UpdateEmailData): Promise<Status> {
-    const user = await this.authRepo.findById(id);
+    const user = await this.authRepo.findByUserId(id);
     if (!user) throw new UnauthorizedException('User not Found');
     user.email = data.email;
     user.emailVerified = false;
@@ -156,15 +163,17 @@ export class AppService {
   }
 
   async requestEmailVerification(id: string): Promise<Status> {
-    const user = await this.authRepo.findById(id);
+    const user = await this.authRepo.findByUserId(id);
     if (!user) throw new NotFoundException('User not found');
     if (user.emailVerified)
       throw new UnauthorizedException('Email already verified');
-    // const token =
-    await this.tokenService.generateEmailVerificationToken(
-      user.id as string,
+    const token = await this.tokenService.generateEmailVerificationToken(
+      user.userId,
       user.email,
     );
+
+    console.log(token);
+
     // Here you would typically send a verification email with a link
     // containing a token or code to verify the email.
     return { success: true };
@@ -173,13 +182,42 @@ export class AppService {
   async verifyEmail(token: string): Promise<Status> {
     const { sub, email }: { sub: string; email: string } =
       await this.tokenService.verifyEmailToken(token);
-    const user = await this.authRepo.findById(sub);
+    const user = await this.authRepo.findByUserId(sub);
     if (!user) throw new NotFoundException('User not found');
     if (user.email !== email)
       throw new BadRequestException(
         'Email from token does not match user email',
       );
     user.emailVerified = true;
+    await user.save();
+    return { success: true };
+  }
+
+  async requestPasswordResetToken(
+    userId: string,
+    email: string,
+  ): Promise<Status> {
+    const user = await this.authRepo.findByUserId(userId);
+    if (!user) throw new NotFoundException('User not found');
+    if (user.email !== email)
+      throw new UnauthorizedException('User Email mismatched');
+    const token = await this.tokenService.generatePasswordResetToken(
+      user.userId,
+      user.email,
+    );
+    console.log(token);
+    return { success: true };
+  }
+
+  async resetPassword(token: string, password: string): Promise<Status> {
+    const { sub, email }: { sub: string; email: string } =
+      await this.tokenService.verifyEmailToken(token);
+    const user = await this.authRepo.findByUserId(sub);
+    if (!user) throw new NotFoundException('User not found');
+    if (user.email !== email)
+      throw new UnauthorizedException('User Email mismatched');
+    const hash = await argon.hash(password);
+    user.passwordHash = hash;
     await user.save();
     return { success: true };
   }

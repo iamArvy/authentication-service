@@ -34,10 +34,16 @@ export class TokenInput {
   token: string;
 }
 
-export class LogoutInput {
+export class IdInput {
   id: string;
 }
 
-export class IdInput {
+export class RequestPasswordResetMessage {
   id: string;
+  email: string;
+}
+
+export class ResetPasswordMessage {
+  token: string;
+  password: string;
 }

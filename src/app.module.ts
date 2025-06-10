@@ -7,6 +7,9 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { AppService } from './app.service';
 import { Session, SessionSchema } from './session/session.schema';
 import { Auth, AuthSchema } from './auth/auth.schema';
+import { AuthRepo } from './auth/auth.repo';
+import { SessionRepo } from './session/session.repo';
+import { TokenService } from './token.service';
 @Module({
   imports: [
     MongooseModule.forRoot(
@@ -24,6 +27,6 @@ import { Auth, AuthSchema } from './auth/auth.schema';
     ConfigModule.forRoot({ isGlobal: true }),
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, AuthRepo, SessionRepo, TokenService],
 })
 export class AppModule {}

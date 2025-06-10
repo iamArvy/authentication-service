@@ -94,10 +94,9 @@ authentication-service/
 
 ## 📊 Roadmap Ideas
 
-* ☑️ Add rate limiting to login route
+* ☑️ Add rate limiting to login route 
 * ☑️ Add Redis caching for session lookups
 * ☑️ Add unit and integration tests
-* ☑️ gRPC health check endpoint
 * ☑️ Audit logging for sessions and auth attempts
 
 ---

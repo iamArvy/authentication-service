@@ -19,6 +19,10 @@ export class AuthRepo {
     return this.model.findById(id);
   }
 
+  async findByUserId(userId: string): Promise<AuthDocument | null> {
+    return this.model.findOne({ userId });
+  }
+
   // async updateRefreshToken(id: string, token: string | null): Promise<any> {
   //   return this.model.updateOne(
   //     { _id: id },

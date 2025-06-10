@@ -4,8 +4,9 @@ import {
   AuthInput,
   IdInput,
   LoginData,
-  LogoutInput,
   RegisterData,
+  RequestPasswordResetMessage,
+  ResetPasswordMessage,
   TokenInput,
   UpdateEmailData,
   UpdatePasswordData,
@@ -37,6 +38,16 @@ export class AppController {
     return this.service.updateEmail(id, data);
   }
 
+  @GrpcMethod('AuthService')
+  requestPasswordResetToken({ id, email }: RequestPasswordResetMessage) {
+    return this.service.requestPasswordResetToken(id, email);
+  }
+
+  @GrpcMethod('AuthService')
+  resetPassword({ token, password }: ResetPasswordMessage) {
+    return this.service.resetPassword(token, password);
+  }
+
   @GrpcMethod()
   requestEmailVerification({ id }: IdInput) {
     return this.service.requestEmailVerification(id);
@@ -58,7 +69,7 @@ export class AppController {
   }
 
   @GrpcMethod('AuthService')
-  logout({ id }: LogoutInput) {
-    return this.service.logout(id);
+  logout({ token }: TokenInput) {
+    return this.service.logout(token);
   }
 }

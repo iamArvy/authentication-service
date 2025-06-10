@@ -17,7 +17,7 @@ export class Session {
   @Prop({ required: true, unique: true })
   userId: string;
 
-  @Prop({ select: false })
+  @Prop({ type: String, select: false })
   hashedRefreshToken?: string | null;
 
   @Prop({ required: true, select: false })
