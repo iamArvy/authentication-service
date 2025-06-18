@@ -22,8 +22,8 @@ A secure and scalable authentication microservice built with **NestJS**, **Passp
 | **Framework**     | [NestJS](https://nestjs.com/)                                        |
 | **Transport**     | [gRPC](https://grpc.io/)                                             |
 | **Auth Strategy** | [Passport.js](https://www.passportjs.org/)<br>[JWT](https://jwt.io/) |
-| **ORM**           | [Mongoose](https://mongoosejs.com/)                                  |
-| **Database**      | [MongoDB](https://mongodb.com/)                                      |
+| **ORM**           | [Prisma](https://prisma.com/)                                  |
+| **Database**      | [PostgreSQL](https://postgresql.com/)                                      |
 
 ---
 
@@ -33,7 +33,7 @@ A secure and scalable authentication microservice built with **NestJS**, **Passp
 
 * Node.js `v20+`
 * pnpm (recommended) / npm / yarn
-* MongoDB instance (local or cloud)
+* PostgreSQL DB instance (local or cloud)
 
 ---
 
@@ -52,9 +52,9 @@ pnpm install
 Create a `.env` file in the root directory:
 
 ```env
-DB_URL=mongodb://localhost:27017/auth-db
-JWT_SECRET=your_jwt_secret
-PORT=3000
+DATABASE_URL= your_db_url
+JWT_SECRET= your_jwt_secret
+GRPC_URL= desired_grpc_url
 ```
 
 ---
@@ -78,14 +78,12 @@ authentication-service/
 ├── proto/
 │   └── auth.proto            # gRPC definitions
 ├── src/
-│   ├── auth/                # Auth repository, logic, schema
+│   ├── controller/          # Grpc Controllers
+│   ├── controller/          # DB Setup and Repositories
 │   ├── dto/                 # Data transfer objects
-│   ├── session/             # Session management (Mongo)
-│   ├── app.controller.ts    # gRPC controller
+│   ├── service/             # API Logic
 │   ├── app.module.ts        # Nest module setup
-│   ├── app.service.ts       # App service
 │   ├── main.ts              # Entry point
-│   └── token.service.ts     # Token generation/validation
 ├── docker-compose.yml
 └── README.md
 ```
