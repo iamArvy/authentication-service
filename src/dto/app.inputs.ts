@@ -1,3 +1,5 @@
+// import { PartialType } from "@nestjs/mapped-types";
+
 export class AuthInput<T> {
   data: T;
   userAgent: string;
@@ -26,7 +28,7 @@ export class UpdatePasswordData {
   oldPassword: string;
 }
 
-export class UpdateEmailData {
+export class EmailData {
   email: string;
 }
 
@@ -46,4 +48,15 @@ export class RequestPasswordResetMessage {
 export class ResetPasswordMessage {
   token: string;
   password: string;
+}
+
+export class RoleData {
+  name: string;
+}
+
+// export class UpdateRoleData implements PartialType(RoleData)
+
+export class UpdateRoleInput {
+  id: string;
+  data: RoleData;
 }

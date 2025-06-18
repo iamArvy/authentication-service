@@ -6,22 +6,39 @@ import "google/protobuf/empty.proto";
 
 service AuthService {
   rpc Health(google.protobuf.Empty) returns (Status);
-
-  // Credential-related
   rpc Register(RegisterRequest) returns (AuthResponse);
+  rpc Login(LoginRequest) returns (AuthResponse);
+  rpc RefreshToken(TokenRequest) returns (AuthToken);
+  rpc Logout(TokenRequest) returns (Status);
+}
+
+service UserService {
+  rpc Health(google.protobuf.Empty) returns (Status);
   rpc ChangePassword(ChangePasswordRequest) returns (Status);
   rpc ChangeEmail(ChangeEmailRequest) returns (Status);
   rpc requestPasswordResetToken(RequestPasswordResetMessage) returns (Status);
   rpc resetPassword(ResetPasswordMessage) returns (Status);
-
-  // Email verification
   rpc RequestEmailVerification(EmailData) returns (Status);
   rpc VerifyEmail(TokenRequest) returns (Status);
+}
 
-  // Login / Token
-  rpc Login(LoginRequest) returns (AuthResponse);
-  rpc RefreshToken(TokenRequest) returns (AuthToken);
-  rpc Logout(TokenRequest) returns (Status);
+service SessionService {
+  rpc Health(google.protobuf.Empty) returns (Status);
+  rpc GetAllUserSessions(IdInput) returns (SessionList);
+  rpc LogoutOtherUserSession(IdInput) returns (Status);
+}
+
+service RoleService {
+  rpc Health(google.protobuf.Empty) returns (Status);
+  rpc Create(CreateRoleInput) returns (RoleData);
+  rpc Update(UpdateRoleInput) returns (Status);
+  rpc Find(IdInput) returns (RoleData);
+  rpc List(google.protobuf.Empty) returns (RoleList);
+  rpc Delete(IdInput) returns (Status);
+}
+
+message IdInput {
+  string id = 1;
 }
 
 message Status {
@@ -96,4 +113,37 @@ message LoginRequest {
   LoginData data = 1;
   string userAgent = 2;
   string ipAddress = 3;
+}
+
+message SessionData {
+  string id = 1;
+  string userAgent = 2;
+  string ipAddress = 3;
+  string createdAt = 4;
+}
+
+message SessionList {
+  repeated SessionData sessions = 1;
+}
+
+message CreateRoleInput {
+  string name = 1;
+}
+
+message UpdateRoleData {
+  string name = 2;
+}
+
+message UpdateRoleInput {
+  string id = 1;
+  UpdateRoleData data = 2;
+}
+
+message RoleData {
+  string id = 1;
+  string name = 2;
+}
+
+message RoleList {
+  repeated RoleData roles = 1;
 }
