@@ -7,7 +7,6 @@ import { RoleService } from './role/role.service';
 import { DbModule } from 'src/db/db.module';
 import { PassportModule } from '@nestjs/passport';
 import { JwtModule } from '@nestjs/jwt';
-import { ConfigModule } from '@nestjs/config';
 import { SessionService } from './session/session.service';
 
 @Module({
@@ -16,7 +15,6 @@ import { SessionService } from './session/session.service';
     JwtModule.register({
       secret: process.env.JWT_SECRET || 'dev-secret',
     }),
-    ConfigModule.forRoot({ isGlobal: true }),
     DbModule,
   ],
   providers: [

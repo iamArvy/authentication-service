@@ -37,4 +37,17 @@ export class UserRepo {
       data: { email },
     });
   }
+
+  async addRole(id: string, roleId: string) {
+    return this.prisma.user.update({
+      where: { id },
+      data: {
+        role: {
+          create: {
+            roleId,
+          },
+        },
+      },
+    });
+  }
 }
