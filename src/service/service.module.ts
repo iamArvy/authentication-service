@@ -27,5 +27,6 @@ import { SessionService } from './session/session.service';
     RoleService,
     SessionService,
   ],
+  exports: [AuthService, UserService, RoleService, SessionService],
 })
 export class ServiceModule {}
